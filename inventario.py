@@ -96,7 +96,7 @@ class Inventario(tk.Frame):
                          font='arial 14 bold', command=self.editar_articulos)
         btn2.place(x=20, y=80, width=180, height=40)
 
-        btn3 = tk.Button(lblframe_botones, text='Eliminar',
+        btn3 = tk.Button(lblframe_botones, text='Eliminar', command=self.eliminar_articulo,
                          font='arial 14 bold')
         btn3.place(x=20, y=140, width=180, height=40)
 
@@ -304,7 +304,7 @@ class Inventario(tk.Frame):
     def filtral_articulos(self, event):
         if self.timer_articulos:
             self.timer_articulos.cancel()
-        self.timer_articulos = threading.Timer(0.5, self._filter_articulos)
+        self.timer_articulos = threading.Timer(1.0, self._filter_articulos)
         self.timer_articulos.start()
 
     def _filter_articulos(self):
@@ -331,7 +331,6 @@ class Inventario(tk.Frame):
             messagebox.showerror("Error", 'Seleciona un articulo para editar')
             return
 
-        # 🔧 CORREGIDO: ahora incluye image_path
         self.cur.execute(
             'SELECT articulo, precio, costo, stock, estado, image_path FROM articulos WHERE articulo=?',
             (selected_item,)
@@ -353,7 +352,6 @@ class Inventario(tk.Frame):
         top.focus_set()
         top.lift()
 
-        # 🔧 CORREGIDO: ahora incluye image_path
         (articulo, precio, costo, stock, estado, image_path) = resultado
 
         tk.Label(top, text="Artículos", font='arial 12 bold',
@@ -390,7 +388,6 @@ class Inventario(tk.Frame):
             top, bg='white', highlightbackground='gray', highlightthickness=1)
         self.frameing.place(x=440, y=30, width=200, height=200)
 
-        # 🔧 CORREGIDO: ahora image_path existe
         if image_path and os.path.exists(image_path):
             image = Image.open(image_path)
             image = image.resize((200, 200), Image.Resampling.LANCZOS)
@@ -448,3 +445,39 @@ class Inventario(tk.Frame):
 
         tk.Button(top, text="Cancelar",
                   font='arial 12 bold', command=top.destroy).place(x=50, y=260, width=150, height=40)
+
+    def eliminar_articulo(self):
+        articulo = self.comboboxbuscar.get()
+
+        if not articulo:
+            messagebox.showerror(
+                "Error", "Selecciona un artículo para eliminar")
+            return
+
+        confirmar = messagebox.askyesno(
+            "Confirmar", f"¿Seguro que deseas eliminar '{articulo}'?")
+
+        if not confirmar:
+            return
+
+        try:
+            self.cur.execute(
+                "DELETE FROM articulos WHERE articulo = ?", (articulo,))
+            self.con.commit()
+
+            self.articulos_combobox()
+            self.cargar_articulos()
+
+            self.label1.config(text='Artículo')
+            self.label2.config(text='Precio')
+            self.label3.config(text='Costo')
+            self.label4.config(text='Stock')
+            self.label5.config(text='Estado')
+
+            messagebox.showinfo(
+                "Éxito", f"Artículo '{articulo}' eliminado correctamente")
+
+        except sqlite3.Error as e:
+            print("Error al eliminar:", e)
+            messagebox.showerror(
+                "Error", "No se pudo eliminar el artículo")

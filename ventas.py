@@ -25,7 +25,9 @@ class Ventas(tk.Frame):
         self.producto_seleccionado = []
         self.widgets()
         self.cargar_productos()
+        self.cargar_clientes()
         self.timer_producto = None
+        self.timer_cliente = None
 
     def obtener_numero_factura_actual(self):
         try:
@@ -38,6 +40,41 @@ class Ventas(tk.Frame):
         except sqlite3.Error as e:
             print("Error obteniendo el número de factura actual:", e)
             return 1
+
+    def cargar_clientes(self):
+        try:
+            conn = sqlite3.connect(self.db_name)
+            c = conn.cursor()
+            c.execute("SELECT nombre FROM clientes")
+            clientes = c.fetchall()
+            self.clientes = [cliente[0] for cliente in clientes]
+            self.entry_cliente['values'] = self.clientes
+            conn.close()
+        except sqlite3.Error as e:
+            print("Error cargando clientes:", e)
+
+    def filtrar_clientes(self, event):
+        if self.timer_cliente:
+            self.timer_cliente.cancel()
+        self.timer_cliente = threading.Timer(0.5, self._filter_clientes)
+        self.timer_cliente.start()
+
+    def _filter_clientes(self):
+        typed = self.entry_cliente.get()
+
+        if typed == '':
+            data = self.clientes
+        else:
+            data = [item for item in self.clientes if typed.lower()
+                    in item.lower()]
+
+        if data:
+            self.entry_cliente['values'] = data
+            self.entry_cliente.event_generate('<Down>')
+        else:
+            self.entry_cliente['values'] = ['No se encontraron resultados']
+            self.entry_cliente.event_generate('<Down>')
+            self.entry_cliente.delete(0, tk.END)
 
     def cargar_productos(self):
         try:
@@ -517,6 +554,7 @@ class Ventas(tk.Frame):
         label_cliente.place(x=10, y=11)
         self.entry_cliente = ttk.Combobox(labelframe, font="Sans 14 bold")
         self.entry_cliente.place(x=120, y=8, width=200, height=40)
+        self.entry_cliente.bind('<KeyRelease>', self.filtrar_clientes)
 
         label_producto = tk.Label(
             labelframe, text="Producto:", font="Sans 14 bold", bg="lightblue")

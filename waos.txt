@@ -1,0 +1,13 @@
+def filtrar_productos(self, event=None):
+    if self.timer_producto:
+        self.after_cancel(self.timer_producto)
+
+    self.timer_producto = self.after(200, self._filter_products)
+
+
+if self.timer_producto:
+            self.timer_producto.cancel()
+        self.timer_producto = threading.Timer(0.5, self._filter_products)
+        self.timer_producto.start()
+
+Continuar parte 7 en 1:52:28
